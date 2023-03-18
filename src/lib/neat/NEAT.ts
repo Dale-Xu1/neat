@@ -22,13 +22,11 @@ export default class NEAT
         this.sortSpecies()
     }
 
+
     public get best(): Genome
     {
-        return this.population
-            .reduce((best: Genome | null, genome) => !best || genome.fitness > best.fitness ? genome : best, null)!
+        return this.population.reduce((best: Genome, genome) => genome.fitness > best.fitness ? genome : best)
     }
-
-
 
     public next()
     {
@@ -78,43 +76,6 @@ export default class NEAT
 
 }
 
-export interface Selectable
-{
-
-    fitness: number
-
-}
-
-class Selector<T extends Selectable>
-{
-
-    private readonly sum: number = 0
-
-    public constructor(private readonly list: T[])
-    {
-        this.sum = list.reduce((sum, item) => sum + item.fitness, 0)
-    }
-
-
-    public next(): T
-    {
-        if (this.sum === 0) return this.list[Random.int(this.list.length)]
-
-        // Randomly select item over weighted distribution
-        let r = Random.next(this.sum)
-        let acc = 0
-
-        for (let item of this.list)
-        {
-            acc += item.fitness
-            if (acc > r) return item
-        }
-
-        throw new Error()
-    }
-
-}
-
 class Species
 {
 
@@ -125,8 +86,7 @@ class Species
 
     public get best(): Genome
     {
-        return this.genomes
-            .reduce((best: Genome | null, genome) => !best || genome.fitness > best.fitness ? genome : best, null)!
+        return this.genomes.reduce((best: Genome, genome) => genome.fitness > best.fitness ? genome : best)
     }
 
     public distance(genome: Genome): number
@@ -168,6 +128,43 @@ class Species
 
         if (total === 0) return Infinity
         return difference / total
+    }
+
+}
+
+export interface Selectable
+{
+
+    fitness: number
+
+}
+
+class Selector<T extends Selectable>
+{
+
+    private readonly sum: number = 0
+
+    public constructor(private readonly list: T[])
+    {
+        this.sum = list.reduce((sum, item) => sum + item.fitness, 0)
+    }
+
+
+    public next(): T
+    {
+        if (this.sum === 0) return this.list[Random.int(this.list.length)]
+
+        // Randomly select item over weighted distribution
+        let r = Random.next(this.sum)
+        let acc = 0
+
+        for (let item of this.list)
+        {
+            acc += item.fitness
+            if (acc >= r) return item
+        }
+
+        throw new Error()
     }
 
 }

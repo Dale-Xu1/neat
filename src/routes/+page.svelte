@@ -1,8 +1,8 @@
 <script lang="ts">
-    import NEAT from "$lib/neat/NEAT";
 import { onMount } from "svelte"
 
-import Genome, { NeuralNetwork } from "../lib/neat/Genome"
+import NEAT from "../lib/neat/NEAT"
+import { Activation, NeuralNetwork } from "../lib/neat/Genome"
 import GenomeRenderer from "../lib/Renderer"
 
 let canvas: HTMLCanvasElement
@@ -28,7 +28,7 @@ onMount(() =>
     {
         for (let genome of neat.population)
         {
-            let network = new NeuralNetwork(genome)
+            let network = new NeuralNetwork(genome, Activation.linear)
             let error = 0
 
             let indices = [0, 1, 2, 3] // .sort(() => Math.random() - 0.5)
@@ -39,7 +39,7 @@ onMount(() =>
     }
 
     let neat = new NEAT(2, 1, 500)
-    for (let i = 0; i < 100; i++)
+    for (let i = 0; i < 50; i++)
     {
         evaluatePopulation()
         neat.next()
@@ -49,7 +49,7 @@ onMount(() =>
     console.log(neat)
 
     let genome = neat.best
-    let network = new NeuralNetwork(genome)
+    let network = new NeuralNetwork(genome, Activation.linear)
 
     let renderer = new GenomeRenderer(genome)
     renderer.render(c, 0, 0, width, height)

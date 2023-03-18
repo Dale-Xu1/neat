@@ -149,19 +149,20 @@ export class Gene
 export class NeuralNetwork
 {
 
-    private readonly nodes: Node[] = []
-    
-    private readonly inputs: Node[]
-    private readonly outputs: Node[]
+    private readonly nodes: Node[]
+
+    private readonly inputs: Node[] = []
+    private readonly outputs: Node[] = []
 
 
-    public constructor(genome: Genome)
+    public constructor(genome: Genome, private readonly activation: ActivationFunction = Activation.softmax,
+        hidden: ActivationFunction = Activation.reLU)
     {
-        let n = genome.inputs + 1
-        for (let i = 0; i < genome.nodes; i++) this.nodes[i] = new Node()
+        for (let i = 0; i < genome.inputs + 1; i++) this.inputs[i] = new Node()
+        for (let i = 0; i < genome.outputs; i++) this.outputs[i] = new Node()
 
-        this.inputs = this.nodes.slice(0, n)
-        this.outputs = this.nodes.slice(n, n + genome.outputs)
+        this.nodes = this.inputs.concat(this.outputs)
+        for (let i = this.nodes.length; i < genome.nodes; i++) this.nodes[i] = new Node(hidden)
 
         // Convert connections to network nodes
         for (let gene of genome.genes)
@@ -189,7 +190,7 @@ export class NeuralNetwork
         for (let node of this.outputs) output.push(node.evaluate())
 
         for (let node of this.nodes) node.reset()
-        return output
+        return output.map(value => this.activation(value, output))
     }
 
 }
@@ -202,6 +203,8 @@ class Node
     private value: number = 0
     private evaluated: boolean = false
 
+    public constructor(private readonly activation: ActivationFunction = Activation.linear) { }
+
 
     public reset() { this.evaluated = false }
     public init(value: number)
@@ -210,9 +213,6 @@ class Node
         this.evaluated = true
     }
 
-    // private sigmoid(value: number): number { return 1 / (1 + Math.pow(Math.E, -4.9 * value)) }
-
-    private reLU(value: number): number { return value > 0 ? value : 0 }
     public evaluate(): number
     {
         if (this.evaluated) return this.value
@@ -225,7 +225,29 @@ class Node
             sum += node.evaluate() * weight
         }
 
-        return this.value = this.reLU(sum)
+        return this.value = this.activation(sum, [])
+    }
+
+}
+
+interface ActivationFunction
+{
+
+    (value: number, inputs: number[]): number
+
+}
+
+export namespace Activation
+{
+
+    export function linear(value: number): number { return value }
+    export function sigmoid(value: number): number { return 1 / (1 + Math.pow(Math.E, -4.9 * value)) }
+
+    export function reLU(value: number): number { return value > 0 ? value : 0 }
+    export function softmax(value: number, inputs: number[]): number
+    {
+        let sum = inputs.map(value => Math.exp(value)).reduce((a, b) => a + b)
+        return Math.exp(value) / sum
     }
 
 }
