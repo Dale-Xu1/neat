@@ -1,7 +1,8 @@
 <script lang="ts">
+    import NEAT from "$lib/neat/NEAT";
 import { onMount } from "svelte"
 
-import Genome, { Gene, NeuralNetwork } from "../lib/neat/Genome"
+import Genome, { NeuralNetwork } from "../lib/neat/Genome"
 import GenomeRenderer from "../lib/Renderer"
 
 let canvas: HTMLCanvasElement
@@ -18,20 +19,39 @@ onMount(() =>
     canvas.style.width = width + "px"
     canvas.style.height = height + "px"
 
-    let a = Genome.init(2, 1)
-    let b = Genome.init(2, 1)
-    for (let i = 0; i < 10; i++)
+    c.scale(ratio, ratio)
+
+    let inputs = [[0, 0], [1, 0], [0, 1], [1, 1]]
+    let outputs = [0, 1, 1, 0]
+
+    function evaluatePopulation()
     {
-        a = a.mutate()
-        b = b.mutate()
+        for (let genome of neat.population)
+        {
+            let network = new NeuralNetwork(genome)
+            let error = 0
+
+            let indices = [0, 1, 2, 3].sort(() => Math.random() - 0.5)
+            for (let j of indices) error += (network.predict(inputs[j])[0] - outputs[j]) ** 2
+
+            genome.fitness = 1 / error
+        }
     }
 
-    let genome = a.crossover(b)
+    let neat = new NEAT(2, 1, 500)
+    for (let i = 0; i < 100; i++)
+    {
+        evaluatePopulation()
+        neat.next()
+    }
 
+    evaluatePopulation()
+    console.log(neat)
+
+    let genome = neat.best
     let network = new NeuralNetwork(genome)
-    let renderer = new GenomeRenderer(genome)
 
-    c.scale(ratio, ratio)
+    let renderer = new GenomeRenderer(genome)
     renderer.render(c, 0, 0, width, height)
 
     console.log(network.predict([0, 0]))

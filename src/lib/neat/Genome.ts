@@ -1,4 +1,5 @@
 import { Random } from "../Math"
+import type { Selectable } from "./NEAT"
 
 const MUTATE_WEIGHT = 0.8 // Chance of mutating a weight
 const ADD_CONNECTION = 0.05 // Chance of adding a connection
@@ -8,7 +9,7 @@ const RESET_WEIGHT = 0.1 // Chance of resetting a weight during mutation
 const WEIGHT_SHIFT = 0.05 // Standard deviation when weight is shifted
 const ENABLE_GENE = 0.25 // Chance a gene is enabled if it is disabled in either parent
 
-export default class Genome
+export default class Genome implements Selectable
 {
 
     public static init(inputs: number, outputs: number): Genome
@@ -16,9 +17,12 @@ export default class Genome
         let nodes = inputs + outputs + 1 // Extra node is bias input
         let genome = new Genome([], inputs, outputs, nodes)
 
-        genome.genes.push(genome.randomConnection())
+        genome.genes[0] = genome.randomConnection()
         return genome
     }
+
+
+    public fitness: number = 0
 
     private constructor(public readonly genes: Gene[],
 
@@ -81,6 +85,7 @@ export default class Genome
             for (let other of genome.genes) if (gene.innovation === other.innovation)
             {
                 gene = gene.crossover(other)
+                break
             }
 
             genes.push(gene)
@@ -163,7 +168,7 @@ export class NeuralNetwork
     public constructor(genome: Genome)
     {
         let n = genome.inputs + 1
-        for (let i = 0; i < genome.nodes; i++) this.nodes.push(new Node())
+        for (let i = 0; i < genome.nodes; i++) this.nodes[i] = new Node()
 
         this.inputs = this.nodes.slice(0, n)
         this.outputs = this.nodes.slice(n, n + genome.outputs)
@@ -215,7 +220,8 @@ class Node
         this.evaluated = true
     }
 
-    private sigmoid(value: number): number { return 1 / (1 + Math.pow(Math.E, -4.9 * value)) }
+    private reLU(value: number): number { return value > 0 ? value : 0 }
+    // private sigmoid(value: number): number { return 1 / (1 + Math.pow(Math.E, -4.9 * value)) }
     public evaluate(): number
     {
         if (this.evaluated) return this.value
@@ -228,7 +234,7 @@ class Node
             sum += node.evaluate() * weight
         }
 
-        return this.value = this.sigmoid(sum)
+        return this.value = this.reLU(sum)
     }
 
 }
