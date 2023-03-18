@@ -35,11 +35,7 @@ export default class Genome implements Selectable
     private copy(genes: Gene[], nodes: number): Genome { return new Genome(genes, this.inputs, this.outputs, nodes) }
     public mutate(): Genome
     {
-        let genes: Gene[] = []
-        for (let gene of this.genes)
-        {
-            genes.push(Random.bool(MUTATE_WEIGHT) ? gene.mutate() : gene)
-        }
+        let genes = this.genes.map(gene => Random.bool(MUTATE_WEIGHT) ? gene.mutate() : gene)
 
         let nodes = this.nodes
         let max = nodes * (nodes - this.inputs - 1)
@@ -78,18 +74,12 @@ export default class Genome implements Selectable
 
     public crossover(genome: Genome): Genome
     {
-        let genes: Gene[] = []
-        for (let gene of this.genes)
+        let genes = this.genes.map(gene =>
         {
             // Test if gene has a matching gene
-            for (let other of genome.genes) if (gene.innovation === other.innovation)
-            {
-                gene = gene.crossover(other)
-                break
-            }
-
-            genes.push(gene)
-        }
+            for (let other of genome.genes) if (gene.innovation === other.innovation) return gene.crossover(other)
+            return gene
+        })
 
         return this.copy(genes, this.nodes)
     }
@@ -220,8 +210,9 @@ class Node
         this.evaluated = true
     }
 
-    private reLU(value: number): number { return value > 0 ? value : 0 }
     // private sigmoid(value: number): number { return 1 / (1 + Math.pow(Math.E, -4.9 * value)) }
+
+    private reLU(value: number): number { return value > 0 ? value : 0 }
     public evaluate(): number
     {
         if (this.evaluated) return this.value

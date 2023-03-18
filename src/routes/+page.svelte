@@ -31,7 +31,7 @@ onMount(() =>
             let network = new NeuralNetwork(genome)
             let error = 0
 
-            let indices = [0, 1, 2, 3].sort(() => Math.random() - 0.5)
+            let indices = [0, 1, 2, 3] // .sort(() => Math.random() - 0.5)
             for (let j of indices) error += (network.predict(inputs[j])[0] - outputs[j]) ** 2
 
             genome.fitness = 1 / error

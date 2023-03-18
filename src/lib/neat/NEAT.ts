@@ -24,10 +24,8 @@ export default class NEAT
 
     public get best(): Genome
     {
-        let best: Genome | null = null
-        for (let genome of this.population) if (!best || genome.fitness > best.fitness) best = genome
-
-        return best!
+        return this.population
+            .reduce((best: Genome | null, genome) => !best || genome.fitness > best.fitness ? genome : best, null)!
     }
 
 
@@ -43,8 +41,9 @@ export default class NEAT
     private nextGenomes()
     {
         // Copy best genomes from large enough species
-        this.population = []
-        for (let species of this.species) if (species.genomes.length > COPY_GENOME) this.population.push(species.best)
+        this.population = this.species
+            .filter(species => species.genomes.length > COPY_GENOME)
+            .map(species => species.best)
 
         let species = this.species.map(species => new GenomeSelector(species.genomes))
         let selector = new Selector(species)
@@ -53,7 +52,7 @@ export default class NEAT
         for (let i = this.population.length; i < this.n; i++)
         {
             let species = selector.next()
-            this.population[i] = species.next().mutate()
+            this.population[i] = species.next()
         }
     }
 
@@ -93,7 +92,7 @@ class Selector<T extends Selectable>
 
     public constructor(private readonly list: T[])
     {
-        for (let item of list) this.sum += item.fitness
+        this.sum = list.reduce((sum, item) => sum + item.fitness, 0)
     }
 
 
@@ -126,10 +125,8 @@ class Species
 
     public get best(): Genome
     {
-        let best: Genome | null = null
-        for (let genome of this.genomes) if (!best || genome.fitness > best.fitness) best = genome
-
-        return best!
+        return this.genomes
+            .reduce((best: Genome | null, genome) => !best || genome.fitness > best.fitness ? genome : best, null)!
     }
 
     public distance(genome: Genome): number
@@ -145,16 +142,11 @@ class Species
 
     private disjoint(genome: Genome): number
     {
-        let matching = 0
-        for (let gene of this.representative.genes)
+        let matching = this.representative.genes.filter(gene =>
         {
-            // Test if gene has a matching gene
-            for (let other of genome.genes) if (gene.innovation === other.innovation)
-            {
-                matching++
-                break
-            }
-        }
+            for (let other of genome.genes) if (gene.innovation === other.innovation) return true
+            return false
+        }).length
 
         let total = this.representative.genes.length + genome.genes.length
         return total - 2 * matching
@@ -169,6 +161,7 @@ class Species
             {
                 difference += Math.abs(gene.weight - other.weight)
                 total++
+
                 break
             }
         }
@@ -197,12 +190,15 @@ class GenomeSelector extends Selector<Genome> implements Selectable
 
     public override next(): Genome
     {
-        if (Random.bool(NO_CROSSOVER)) return super.next()
+        let genome: Genome
+        if (Random.bool(NO_CROSSOVER)) genome = super.next()
+        else
+        {
+            let a = super.next(), b = super.next()
+            genome = a.fitness > b.fitness ? a.crossover(b) : b.crossover(a)
+        }
 
-        let a = super.next()
-        let b = super.next()
-
-        return a.fitness > b.fitness ? a.crossover(b) : b.crossover(a)
+        return genome.mutate()
     }
 
 }
