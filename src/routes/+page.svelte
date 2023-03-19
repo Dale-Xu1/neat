@@ -2,7 +2,7 @@
 import { onMount } from "svelte"
 
 import NEAT from "../lib/neat/NEAT"
-import { Activation, NeuralNetwork } from "../lib/neat/Genome"
+import { NeuralNetwork } from "../lib/neat/Genome"
 import GenomeRenderer from "../lib/Renderer"
 
 let canvas: HTMLCanvasElement
@@ -10,7 +10,7 @@ onMount(() =>
 {
     let c = canvas.getContext("2d")!
 
-    let width = 300, height = 150
+    let width = 500, height = 250
     let ratio = window.devicePixelRatio
 
     canvas.width = width * ratio
@@ -31,7 +31,7 @@ onMount(() =>
             let network = new NeuralNetwork(genome)
 
             let error = 0
-            for (let n = 0; n < 4; n++)
+            for (let n = 0; n < 8; n++)
             {
                 let indices = [0, 1, 2, 3].sort(() => Math.random() - 0.5)
                 for (let i of indices)
@@ -46,33 +46,33 @@ onMount(() =>
     }
 
     let neat = new NEAT(2, 2, 500)
-    for (let i = 0; i < 100; i++)
+    let i = 0
+
+    loop()
+    function loop()
     {
         evaluatePopulation()
-        console.log(i, neat.best.fitness)
+        console.log(i++, neat.best.fitness)
+
+        let genome = neat.best
+        let renderer = new GenomeRenderer(genome)
+
+        c.clearRect(0, 0, width, height)
+        renderer.render(c, 0, 0, width, height)
 
         neat.next()
+        if (i > 100)
+        {
+            let network = new NeuralNetwork(genome)
+
+            console.log(network.predict([0, 0]))
+            console.log(network.predict([1, 0]))
+            console.log(network.predict([0, 1]))
+            console.log(network.predict([1, 1]))
+        }
+        else requestAnimationFrame(loop)
     }
-
-    evaluatePopulation()
-    console.log(neat)
-
-    let genome = neat.best
-    let network = new NeuralNetwork(genome)
-
-    let renderer = new GenomeRenderer(genome)
-    renderer.render(c, 0, 0, width, height)
-
-    console.log(network.predict([0, 0]))
-    console.log(network.predict([1, 0]))
-    console.log(network.predict([0, 1]))
-    console.log(network.predict([1, 1]))
 })
 
 </script>
-
 <canvas bind:this={canvas}></canvas>
-
-<style>
-
-</style>

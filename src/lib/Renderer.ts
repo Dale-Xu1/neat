@@ -7,45 +7,55 @@ const RADIUS = 8
 export default class GenomeRenderer
 {
 
-    private static generator(seed: number): () => number {
-        let a = 0x9E3779B9, b = 0x243F6A88, c = 0xB7E15162, d = seed ^ 0xDEADBEEF
-        return function() {
-            a >>>= 0, b >>>= 0, c >>>= 0, d >>>= 0
-
-            let t = (a + b) | 0
-            a = b ^ b >>> 9
-            b = c + (c << 3) | 0
-            c = (c << 21 | c >>> 11)
-            d = d + 1 | 0
-            t = t + d | 0
-            c = c + t | 0
-
-            return (t >>> 0) / 4294967296
-        }
-    }
-
-
     private readonly genes: Gene[]
     private readonly nodes: [number, number][] = []
 
 
     public constructor(genome: Genome)
     {
-        this.genes = genome.genes
+        this.genes = genome.genes.filter(gene => gene.enabled)
 
         for (let i = 0; i < genome.inputs + 1; i++) this.nodes.push([MARGIN, (i + 1) / (genome.inputs + 2)])
         for (let i = 0; i < genome.outputs; i++) this.nodes.push([1 - MARGIN, (i + 1) / (genome.outputs + 1)])
 
-        let m = MARGIN * 1.5
-        let n = 1 / (Math.max(genome.inputs + 1, genome.outputs) + 1)
+        let layers = this.organize(genome)
+        for (let i = 0; i < layers.length; i++)
+        {
+            let layer = layers[i]
+            let x = MARGIN + ((i + 1) / (layers.length + 1)) * (1 - 2 * MARGIN)
 
-        let random = GenomeRenderer.generator(2)
+            for (let j = 0; j < layer.length; j++) this.nodes[layer[j]] = [x, (j + 1) / (layer.length + 1)]
+        }
+    }
+
+    private organize(genome: Genome): number[][]
+    {
+        let layers: number[][] = [[]]
 
         let nodes = genome.inputs + genome.outputs + 1
         for (let i = nodes; i < genome.nodes; i++)
         {
-            this.nodes.push([random() * (1 - 2 * m) + m, random() * (1 - 2 * n) + n])
+            let layer = layers.find(layer => this.compatible(i, layer))
+
+            if (layer) layer.push(i)
+            else layers.push([ i ])
         }
+
+        return layers
+    }
+
+    private compatible(i: number, layer: number[]): boolean
+    {
+        for (let gene of this.genes.filter(gene => gene.to === i))
+        {
+            for (let j of layer) if (gene.from === j) return false
+        }
+        for (let gene of this.genes.filter(gene => gene.from === i))
+        {
+            for (let j of layer) if (gene.to === j) return false
+        }
+
+        return true
     }
 
 
@@ -64,19 +74,17 @@ export default class GenomeRenderer
     {
         for (let gene of this.genes)
         {
-            if (!gene.enabled) continue
-
             let [fx, fy] = this.nodes[gene.from]
             let [tx, ty] = this.nodes[gene.to]
 
-            let alpha = Math.min(Math.abs(gene.weight), 1)
+            let alpha = Math.min(Math.abs(gene.weight) / 2, 1)
 
-            c.strokeStyle = gene.weight > 0 ? `rgba(255, 0, 0, ${alpha})` : `rgba(0, 0, 255, ${alpha})`
+            c.strokeStyle = gene.weight > 0 ? `rgba(125, 240, 105, ${alpha})` : `rgba(240, 80, 80, ${alpha})`
             c.lineWidth = Math.abs(gene.weight) + 1
 
             if (gene.from === gene.to)
             {
-                let r = RADIUS * 1.5
+                let r = 1.8 * RADIUS
                 c.strokeRect(fx * w - r, fy * h - r, 2 * r, r)
             }
             else
@@ -97,11 +105,8 @@ export default class GenomeRenderer
 
         for (let [x, y] of this.nodes)
         {
-            c.beginPath()
-            c.arc(x * w, y * h, RADIUS, 0, 2 * Math.PI)
-
-            c.fill()
-            c.stroke()
+            c.fillRect(x * w - RADIUS, y * h - RADIUS, 2 * RADIUS, 2 * RADIUS)
+            c.strokeRect(x * w - RADIUS, y * h - RADIUS, 2 * RADIUS, 2 * RADIUS)
         }
     }
 
