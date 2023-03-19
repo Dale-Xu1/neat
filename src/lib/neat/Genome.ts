@@ -155,9 +155,12 @@ export class NeuralNetwork
     private readonly outputs: Node[] = []
 
 
-    public constructor(genome: Genome, private readonly activation: ActivationFunction = Activation.softmax,
+    public constructor(genome: Genome,
+        private readonly activation: ActivationFunction = Activation.softmax,
         hidden: ActivationFunction = Activation.reLU)
     {
+        if (hidden === Activation.softmax) throw new Error("Softmax cannot be used for hidden nodes")
+
         for (let i = 0; i < genome.inputs + 1; i++) this.inputs[i] = new Node()
         for (let i = 0; i < genome.outputs; i++) this.outputs[i] = new Node()
 
@@ -186,11 +189,11 @@ export class NeuralNetwork
         this.inputs[n].init(1)
 
         // Evaluate outputs
-        let output: number[] = []
-        for (let node of this.outputs) output.push(node.evaluate())
+        let output: number[] = this.activation(this.outputs.map(node => node.evaluate()))
+        for (let i = 0; i < output.length; i++) this.outputs[i].init(output[i])
 
         for (let node of this.nodes) node.reset()
-        return output.map(value => this.activation(value, output))
+        return output
     }
 
 }
@@ -225,7 +228,7 @@ class Node
             sum += node.evaluate() * weight
         }
 
-        return this.value = this.activation(sum, [])
+        return this.value = this.activation([ sum ])[0]
     }
 
 }
@@ -233,21 +236,27 @@ class Node
 interface ActivationFunction
 {
 
-    (value: number, inputs: number[]): number
+    (inputs: number[]): number[]
 
 }
 
 export namespace Activation
 {
 
-    export function linear(value: number): number { return value }
-    export function sigmoid(value: number): number { return 1 / (1 + Math.pow(Math.E, -4.9 * value)) }
-
-    export function reLU(value: number): number { return value > 0 ? value : 0 }
-    export function softmax(value: number, inputs: number[]): number
+    export function linear(inputs: number[]): number[] { return inputs }
+    export function sigmoid(inputs: number[]): number[]
     {
-        let sum = inputs.map(value => Math.exp(value)).reduce((a, b) => a + b)
-        return Math.exp(value) / sum
+        return inputs.map(value => 1 / (1 + Math.pow(Math.E, -4.9 * value)))
+    }
+
+    export function reLU(inputs: number[]): number[] { return inputs.map(value => value > 0 ? value : 0) }
+    export function softmax(inputs: number[]): number[]
+    {
+        let max = Math.max(...inputs)
+        let exp = inputs.map(value => Math.exp(value - max))
+
+        let sum = exp.reduce((a, b) => a + b)
+        return exp.map(value => value / sum)
     }
 
 }

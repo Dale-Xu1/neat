@@ -22,26 +22,35 @@ onMount(() =>
     c.scale(ratio, ratio)
 
     let inputs = [[0, 0], [1, 0], [0, 1], [1, 1]]
-    let outputs = [0, 1, 1, 0]
+    let outputs = [[0, 1], [1, 0], [1, 0], [0, 1]]
 
     function evaluatePopulation()
     {
         for (let genome of neat.population)
         {
-            let network = new NeuralNetwork(genome, Activation.linear)
+            let network = new NeuralNetwork(genome)
+
             let error = 0
+            for (let n = 0; n < 4; n++)
+            {
+                let indices = [0, 1, 2, 3].sort(() => Math.random() - 0.5)
+                for (let i of indices)
+                {
+                    let prediction = network.predict(inputs[i])
+                    for (let j = 0; j < 2; j++) error += (prediction[j] - outputs[i][j]) ** 2
+                }
+            }
 
-            let indices = [0, 1, 2, 3] // .sort(() => Math.random() - 0.5)
-            for (let j of indices) error += (network.predict(inputs[j])[0] - outputs[j]) ** 2
-
-            genome.fitness = 1 / error
+            genome.fitness = Math.exp(4 - error)
         }
     }
 
-    let neat = new NEAT(2, 1, 500)
-    for (let i = 0; i < 50; i++)
+    let neat = new NEAT(2, 2, 500)
+    for (let i = 0; i < 100; i++)
     {
         evaluatePopulation()
+        console.log(i, neat.best.fitness)
+
         neat.next()
     }
 
@@ -49,7 +58,7 @@ onMount(() =>
     console.log(neat)
 
     let genome = neat.best
-    let network = new NeuralNetwork(genome, Activation.linear)
+    let network = new NeuralNetwork(genome)
 
     let renderer = new GenomeRenderer(genome)
     renderer.render(c, 0, 0, width, height)

@@ -1,7 +1,7 @@
 import { Random } from "../Math"
 import Genome, { Gene } from "./Genome"
 
-const COPY_GENOME = 5 // Minimum genomes in a species for the best to be copied
+const MIN_COPY_BEST = 5 // Minimum genomes in a species for the best to be copied
 const NO_CROSSOVER = 0.25 // Chance a child is created without crossover
 
 const MIN_NORMAL = 20 // Minimum gene length where normalizer is 1
@@ -40,7 +40,7 @@ export default class NEAT
     {
         // Copy best genomes from large enough species
         this.population = this.species
-            .filter(species => species.genomes.length > COPY_GENOME)
+            .filter(species => species.genomes.length > MIN_COPY_BEST)
             .map(species => species.best)
 
         let species = this.species.map(species => new GenomeSelector(species.genomes))
@@ -56,7 +56,8 @@ export default class NEAT
 
     private sortSpecies()
     {
-        this.species = this.species.map(species => new Species(species.representative))
+        // Choose new representatives for species
+        this.species = this.species.map(species => new Species(species.genomes[Random.int(species.genomes.length)]))
         for (let genome of this.population)
         {
             let compatible: Species | null = null
@@ -102,6 +103,7 @@ class Species
 
     private disjoint(genome: Genome): number
     {
+        // Calculate number of disjoint genes
         let matching = this.representative.genes.filter(gene =>
         {
             for (let other of genome.genes) if (gene.innovation === other.innovation) return true
@@ -119,6 +121,7 @@ class Species
         {
             for (let other of genome.genes) if (gene.innovation === other.innovation)
             {
+                // Accumulate weight difference in matching genes
                 difference += Math.abs(gene.weight - other.weight)
                 total++
 
@@ -164,7 +167,7 @@ class Selector<T extends Selectable>
             if (acc >= r) return item
         }
 
-        throw new Error()
+        throw new Error("Invalid fitness values")
     }
 
 }
