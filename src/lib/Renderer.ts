@@ -2,7 +2,7 @@ import type Genome from "./neat/Genome"
 import type { Gene } from "./neat/Genome"
 
 const MARGIN = 0.1
-const RADIUS = 8
+const WIDTH = 8
 
 export default class GenomeRenderer
 {
@@ -77,14 +77,14 @@ export default class GenomeRenderer
             let [fx, fy] = this.nodes[gene.from]
             let [tx, ty] = this.nodes[gene.to]
 
-            let alpha = Math.min(Math.abs(gene.weight) / 2, 1)
+            let alpha = Math.min(Math.abs(gene.weight) * 0.8, 1)
 
             c.strokeStyle = gene.weight > 0 ? `rgba(125, 240, 105, ${alpha})` : `rgba(240, 80, 80, ${alpha})`
-            c.lineWidth = Math.abs(gene.weight) + 1
+            c.lineWidth = Math.max(Math.abs(gene.weight) - 1, 0) + 1
 
             if (gene.from === gene.to)
             {
-                let r = 1.8 * RADIUS
+                let r = 1.8 * WIDTH
                 c.strokeRect(fx * w - r, fy * h - r, 2 * r, r)
             }
             else
@@ -99,14 +99,23 @@ export default class GenomeRenderer
 
     private renderNodes(c: CanvasRenderingContext2D, w: number, h: number)
     {
-        c.fillStyle = "white"
         c.strokeStyle = "black"
         c.lineWidth = 1
 
-        for (let [x, y] of this.nodes)
+        c.font = "10px Arial"
+        c.textAlign = "center"
+        c.textBaseline = "middle"
+
+        for (let i = 0; i < this.nodes.length; i++)
         {
-            c.fillRect(x * w - RADIUS, y * h - RADIUS, 2 * RADIUS, 2 * RADIUS)
-            c.strokeRect(x * w - RADIUS, y * h - RADIUS, 2 * RADIUS, 2 * RADIUS)
+            let [x, y] = this.nodes[i]
+
+            c.fillStyle = "white"
+            c.fillRect(x * w - WIDTH, y * h - WIDTH, 2 * WIDTH, 2 * WIDTH)
+            c.strokeRect(x * w - WIDTH, y * h - WIDTH, 2 * WIDTH, 2 * WIDTH)
+
+            c.fillStyle = "black"
+            c.fillText(i.toString(), x * w, y * h + 1)
         }
     }
 

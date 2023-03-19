@@ -10,7 +10,7 @@ onMount(() =>
 {
     let c = canvas.getContext("2d")!
 
-    let width = 500, height = 250
+    let width = 300, height = 150
     let ratio = window.devicePixelRatio
 
     canvas.width = width * ratio
@@ -22,7 +22,7 @@ onMount(() =>
     c.scale(ratio, ratio)
 
     let inputs = [[0, 0], [1, 0], [0, 1], [1, 1]]
-    let outputs = [[0, 1], [1, 0], [1, 0], [0, 1]]
+    let outputs = [0, 1, 1, 0]
 
     function evaluatePopulation()
     {
@@ -31,21 +31,17 @@ onMount(() =>
             let network = new NeuralNetwork(genome)
 
             let error = 0
-            for (let n = 0; n < 8; n++)
+            for (let n = 0; n < 4; n++)
             {
                 let indices = [0, 1, 2, 3].sort(() => Math.random() - 0.5)
-                for (let i of indices)
-                {
-                    let prediction = network.predict(inputs[i])
-                    for (let j = 0; j < 2; j++) error += (prediction[j] - outputs[i][j]) ** 2
-                }
+                for (let i of indices) error += (network.predict(inputs[i])[0] - outputs[i]) ** 2
             }
 
-            genome.fitness = Math.exp(4 - error)
+            genome.fitness = 3 ** (8 - error)
         }
     }
 
-    let neat = new NEAT(2, 2, 500)
+    let neat = new NEAT(2, 1, 500)
     let i = 0
 
     loop()
@@ -60,7 +56,6 @@ onMount(() =>
         c.clearRect(0, 0, width, height)
         renderer.render(c, 0, 0, width, height)
 
-        neat.next()
         if (i > 100)
         {
             let network = new NeuralNetwork(genome)
@@ -70,7 +65,11 @@ onMount(() =>
             console.log(network.predict([0, 1]))
             console.log(network.predict([1, 1]))
         }
-        else requestAnimationFrame(loop)
+        else
+        {
+            neat.next()
+            requestAnimationFrame(loop)
+        }
     }
 })
 

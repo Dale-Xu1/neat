@@ -156,7 +156,7 @@ export class NeuralNetwork
 
 
     public constructor(genome: Genome,
-        private readonly activation: ActivationFunction = Activation.softmax,
+        private readonly activation: ActivationFunction = Activation.linear,
         hidden: ActivationFunction = Activation.reLU)
     {
         if (hidden === Activation.softmax) throw new Error("Softmax cannot be used for hidden nodes")
