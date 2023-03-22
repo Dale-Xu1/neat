@@ -112,7 +112,7 @@ export class Gene
     }
 
     private constructor(public readonly innovation: number,
-        
+
         public readonly from: number,
         public readonly to: number,
 
